@@ -1,0 +1,23 @@
+{
+	"name": "tht-backend",
+	"version": "0.0.0",
+	"private": true,
+	"scripts": {
+		"deploy": "wrangler deploy",
+		"dev": "wrangler dev",
+		"start": "wrangler dev",
+		"test": "vitest",
+		"cf-typegen": "wrangler types"
+	},
+	"devDependencies": {
+		"@cloudflare/vitest-pool-workers": "^0.2.6",
+		"@cloudflare/workers-types": "^4.20240502.0",
+		"typescript": "^5.0.4",
+		"vitest": "1.3.0",
+		"wrangler": "^3.0.0"
+	},
+	"dependencies": {
+		"@types/cookie": "^0.6.0",
+		"itty-router": "^5.0.17"
+	}
+}
