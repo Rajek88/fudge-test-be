@@ -1,5 +1,5 @@
 import { IRequest, Router, json } from 'itty-router';
-import { getAllUsers, registerUser } from './controllers/UserController';
+import { getAllUsers, loginUser, registerUser } from './controllers/UserController';
 import { Env } from '../worker-configuration';
 
 const router = Router<IRequest, [Env, ExecutionContext]>({
@@ -15,6 +15,9 @@ router.get('/user/getAll', getAllUsers);
 
 // register new user
 router.post('/user/register', registerUser);
+
+// register new user
+router.post('/user/login', loginUser);
 
 router.all('*', async (req) => {
 	return json({ error: 'Not found' }, { status: 404 });
