@@ -1,0 +1,12 @@
+To update the schema based on primsa schema
+
+npx prisma migrate diff --from-empty --to-schema-datamodel ./prisma/schema.prisma --script > migrations/0001_schema.sql
+
+documentation: https://developers.cloudflare.com/d1/tutorials/d1-and-prisma-orm/
+
+then to apply, run: 
+# for local db
+npx wrangler d1 migrations apply prod-d1-fudge --local
+
+#for remote db
+npx wrangler d1 migrations apply prod-d1-fudge --remote

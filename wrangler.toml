@@ -3,3 +3,8 @@ name = "tht-backend"
 main = "src/index.ts"
 compatibility_date = "2024-05-02"
 compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB" # i.e. available in your Worker on env.DB
+database_name = "prod-d1-fudge"
+database_id = "40d623dc-5757-4ddf-9168-d8dcd8533a23"

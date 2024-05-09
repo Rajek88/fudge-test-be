@@ -17,7 +17,10 @@
 		"wrangler": "^3.0.0"
 	},
 	"dependencies": {
+		"@prisma/adapter-d1": "^5.13.0",
+		"@prisma/client": "^5.13.0",
 		"@types/cookie": "^0.6.0",
-		"itty-router": "^5.0.17"
+		"itty-router": "^5.0.17",
+		"prisma": "^5.13.0"
 	}
 }
