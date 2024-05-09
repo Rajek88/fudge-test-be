@@ -8,3 +8,6 @@ compatibility_flags = ["nodejs_compat"]
 binding = "DB" # i.e. available in your Worker on env.DB
 database_name = "prod-d1-fudge"
 database_id = "40d623dc-5757-4ddf-9168-d8dcd8533a23"
+
+[vars]
+API_SALT = "$2a$12$KwhxPZMAlLfZ4Bj.IG.otO"

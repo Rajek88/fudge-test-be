@@ -1,5 +1,8 @@
-import { IRequest, json, withContent, withParams } from 'itty-router';
+import { IRequest, json, withContent } from 'itty-router';
 import { ExcludeFromRows, GeneratePrismaClient } from '../db/DB_Handler';
+import { hashPassword } from '../utils/PasswordUtils';
+import { Env } from '../../worker-configuration';
+import * as bcrypt from 'bcryptjs';
 
 export const getAllUsers = async (request: IRequest, env: Env, ctx: ExecutionContext) => {
 	try {
@@ -22,12 +25,15 @@ export const registerUser = async (request: IRequest, env: Env, ctx: ExecutionCo
 		if (!name || !email || !password) {
 			return json({ message: 'Invalid input' }, { status: 400 });
 		}
+
+		// now hash the password with API salt that we have in wrangler.toml
+		const hashedPassword = await hashPassword(password, env.API_SALT);
 		const prisma = GeneratePrismaClient(env);
 		const user = await prisma.user.create({
 			data: {
 				name,
 				email,
-				password,
+				password: hashedPassword,
 			},
 		});
 		return json({ message: 'success', user }, { status: 200 });
