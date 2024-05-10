@@ -113,7 +113,9 @@ export const checkInvitationAndAddUserToTeam = async (request: IRequest, env: En
 				user: true,
 			},
 		});
-		if (!invitation) {
+
+		// check if invitation is invalid and if logged user has access to it
+		if (!invitation || invitation?.user?.id !== request?.loggedUser?.id) {
 			return json({ message: 'Invalid invitation' }, { status: 404 });
 		}
 

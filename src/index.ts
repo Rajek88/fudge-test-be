@@ -1,5 +1,5 @@
 import { IRequest, Router, json } from 'itty-router';
-import { getAllUsers, inviteUserToTeam, loginUser, registerUser } from './controllers/UserController';
+import { getAllInvitations, getAllUsers, inviteUserToTeam, loginUser, registerUser } from './controllers/UserController';
 import { Env } from '../worker-configuration';
 import { validateToken } from './middlewares/Auth';
 
@@ -20,7 +20,11 @@ router.post('/user/register', registerUser);
 // register new user
 router.post('/user/login', loginUser);
 
+// invite user
 router.post('/admin/inviteUser', validateToken, inviteUserToTeam);
+
+// get all invitations
+router.get('/admin/getAllInvitations', getAllInvitations);
 
 router.all('*', async (req) => {
 	return json({ error: 'Not found' }, { status: 404 });
