@@ -1,4 +1,5 @@
-import { IRequest, Router, cors, json } from 'itty-router';
+import { IRequest, Router, cors, json, withContent } from 'itty-router';
+import { DurableObject } from 'cloudflare:workers';
 import {
 	checkInvitationAndAddUserToTeam,
 	getActiveTeamMembers,
@@ -45,6 +46,11 @@ router.get('/user/acceptInvitation', validateToken, checkInvitationAndAddUserToT
 // getActiveTeamMembers
 router.get('/user/getActiveTeamMembers', validateToken, getActiveTeamMembers);
 
+// // socket
+// router.get('/socket', (req: IRequest) => {
+// 	return json({ req }, { status: 200 });
+// });
+
 // fallback
 router.all('*', async (req) => {
 	return json({ error: 'Not found' }, { status: 404 });
@@ -52,6 +58,84 @@ router.all('*', async (req) => {
 
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+		// websocket code
+		if (request.url.endsWith('/websocket')) {
+			// Expect to receive a WebSocket Upgrade request.
+			// If there is one, accept the request and return a WebSocket Response.
+			const upgradeHeader = request.headers.get('Upgrade');
+			if (!upgradeHeader || upgradeHeader !== 'websocket') {
+				return new Response('Durable Object expected Upgrade: websocket', { status: 426 });
+			}
+
+			// This example will refer to the same Durable Object instance
+			let id = env.WEBSOCKET_SERVER.idFromName('live-users');
+			let stub = env.WEBSOCKET_SERVER.get(id);
+
+			return stub.fetch(request);
+		}
+
+		// normal code
 		return router.fetch(request, env, ctx);
 	},
 } satisfies ExportedHandler<Env>;
+
+// Durable Object
+export class WebSocketServer extends DurableObject {
+	currentlyConnectedWebSockets: number;
+	// create an hashmap of live users
+	currentlyLiveUsers: {
+		[key: string]: boolean;
+	};
+
+	constructor(ctx: DurableObjectState, env: Env) {
+		// This is reset whenever the constructor runs because
+		// regular WebSockets do not survive Durable Object resets.
+		//
+		// WebSockets accepted via the Hibernation API can survive
+		// a certain type of eviction, but we will not cover that here.
+		super(ctx, env);
+		this.currentlyConnectedWebSockets = 0;
+		this.currentlyLiveUsers = {};
+	}
+
+	async fetch(request: Request): Promise<Response> {
+		// Creates two ends of a WebSocket connection.
+		const webSocketPair = new WebSocketPair();
+		const [client, server] = Object.values(webSocketPair);
+
+		// Calling `accept()` tells the runtime that this WebSocket is to begin terminating
+		// request within the Durable Object. It has the effect of "accepting" the connection,
+		// and allowing the WebSocket to send and receive messages.
+		server.accept();
+		this.currentlyConnectedWebSockets += 1;
+
+		// add id of user to hashmap and put the value as true
+		const socketUserId = request.headers.get('x-socket-user-id');
+		this.currentlyLiveUsers[`${socketUserId}`] = true;
+
+		// Upon receiving a message from the client, the server replies with the same message,
+		// and the total number of connections with the "[Durable Object]: " prefix
+		server.addEventListener('message', (event: MessageEvent) => {
+			server.send(
+				`[Durable Object] currentlyConnectedWebSockets: ${
+					this.currentlyConnectedWebSockets
+				} -> Received ${event?.data?.toString()} from ${socketUserId}`
+			);
+		});
+
+		// If the client closes the connection, the runtime will close the connection too.
+		server.addEventListener('close', (cls: CloseEvent) => {
+			this.currentlyConnectedWebSockets -= 1;
+
+			// also remove user from live user's hashmap
+			this.currentlyLiveUsers[`${socketUserId}`] = false;
+
+			server.close(cls.code, `Durable Object is closing WebSocket -> last live users ${JSON.stringify(this.currentlyLiveUsers)}`);
+		});
+
+		return new Response(null, {
+			status: 101,
+			webSocket: client,
+		});
+	}
+}
