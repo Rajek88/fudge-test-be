@@ -72,19 +72,15 @@ export const loginUser = async (request: IRequest, env: Env, ctx: ExecutionConte
 			return json({ message: 'Invalid username/password' }, { status: 404 });
 		}
 
-		// we are here, means user exists and passwords matched, time to generate jwt
-		const token = await generateJWTToken({
-			name: user.name,
-			email: user.email,
-			id: user.id,
-		});
-
 		// user
 		const userWithoutPW = {
 			name: user.name,
 			email: user.email,
 			id: user.id,
 		};
+
+		// we are here, means user exists and passwords matched, time to generate jwt
+		const token = await generateJWTToken(userWithoutPW);
 
 		// now send this token to the response
 		return json({ message: 'success', user: userWithoutPW, token }, { status: 200 });
