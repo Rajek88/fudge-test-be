@@ -213,7 +213,7 @@ interface TeamMembers {
 }
 
 // getActiveTeamMembers
-export const getActiveTeamMembers = async (request: IRequest, env: Env, ctx: ExecutionContext) => {
+export const getTeamMembers = async (request: IRequest, env: Env, ctx: ExecutionContext) => {
 	try {
 		// get logged in user's id from token
 		const user_id = Number(request?.loggedUser?.id);

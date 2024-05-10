@@ -2,9 +2,9 @@ import { IRequest, Router, cors, json, withContent } from 'itty-router';
 import { DurableObject } from 'cloudflare:workers';
 import {
 	checkInvitationAndAddUserToTeam,
-	getActiveTeamMembers,
 	getAllInvitations,
 	getAllUsers,
+	getTeamMembers,
 	inviteUserToTeam,
 	loginUser,
 	registerUser,
@@ -43,8 +43,8 @@ router.get('/admin/getAllInvitations', getAllInvitations);
 // accept invitation
 router.get('/user/acceptInvitation', validateToken, checkInvitationAndAddUserToTeam);
 
-// getActiveTeamMembers
-router.get('/user/getActiveTeamMembers', validateToken, getActiveTeamMembers);
+// getTeamMembers
+router.get('/user/getTeamMembers', validateToken, getTeamMembers);
 
 // fallback
 router.all('*', async (req) => {
