@@ -122,7 +122,7 @@ export const checkInvitationAndAddUserToTeam = async (request: IRequest, env: En
 		// time elapsed
 		const timeElapsed = Date.now() - invitation.created_at.getTime();
 		// if invitation is expired, i.e. 10 minutes have been passed, return error
-		if (10 * 60 * 1000 > timeElapsed) {
+		if (10 * 60 * 1000 < timeElapsed) {
 			// update the status to db
 			await prisma.invitation.update({
 				where: {
@@ -133,7 +133,7 @@ export const checkInvitationAndAddUserToTeam = async (request: IRequest, env: En
 				},
 			});
 			// return the response
-			return json({ message: 'Invitation expired' }, { status: 400 });
+			return json({ message: 'Invitation expired', timeElapsed }, { status: 400 });
 		}
 
 		// if everything is in time, check if user is alreday in team, add the user to team
@@ -208,14 +208,48 @@ export const inviteUserToTeam = async (request: IRequest, env: Env, ctx: Executi
 	}
 };
 
+interface TeamMembers {
+	[key: string]: any[];
+}
+
 // getActiveTeamMembers
 export const getActiveTeamMembers = async (request: IRequest, env: Env, ctx: ExecutionContext) => {
 	try {
 		// get logged in user's id from token
+		const user_id = Number(request?.loggedUser?.id);
+
+		const prisma = GeneratePrismaClient(env);
 		// check in team_user_association table, and find out all the teams the user has access to
-		// get all the users from that team
-		// map their ids with socket.io, and poll it every 5 min from FE
-		return json({ message: 'success' }, { status: 200 });
+		const teams = await prisma.team_user_association.findMany({
+			where: {
+				user_id: user_id,
+			},
+		});
+		// now get all the users in the specified teams
+		let teamMembers: TeamMembers = {};
+		for (let team of teams) {
+			const members = await prisma.team_user_association.findMany({
+				where: {
+					team: team?.team,
+				},
+				include: {
+					user: {
+						select: {
+							name: true,
+							id: true,
+							email: true,
+						},
+					},
+				},
+			});
+			// check if we have older data, else create property and push data
+			if (!teamMembers?.[`${team.team}`]) {
+				teamMembers[`${team.team}`] = [];
+				teamMembers[`${team.team}`].push(...members);
+			}
+		}
+		// get all the teamMembers from that team
+		return json({ message: 'success', teamMembers }, { status: 200 });
 	} catch (error) {
 		return json({ message: 'error', error }, { status: 500 });
 	}
