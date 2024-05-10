@@ -115,7 +115,7 @@ export class WebSocketServer extends DurableObject {
 		server.addEventListener('message', (event: MessageEvent) => {
 			// if message is to ask the live user_ids
 			if (event?.data?.toString() === 'live-user-ids') {
-				server.send(`${JSON.stringify(this.currentlyLiveUsers)}`);
+				server.send(`live-user-ids ${JSON.stringify(this.currentlyLiveUsers)}`);
 			} else {
 				server.send(
 					`[Durable Object] currentlyConnectedWebSockets: ${
