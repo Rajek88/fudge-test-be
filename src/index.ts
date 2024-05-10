@@ -1,4 +1,4 @@
-import { IRequest, Router, json } from 'itty-router';
+import { IRequest, Router, cors, json } from 'itty-router';
 import {
 	checkInvitationAndAddUserToTeam,
 	getActiveTeamMembers,
@@ -11,8 +11,13 @@ import {
 import { Env } from '../worker-configuration';
 import { validateToken } from './middlewares/Auth';
 
+// get preflight and corsify pair
+const { preflight, corsify } = cors();
+
 const router = Router<IRequest, [Env, ExecutionContext]>({
 	// Hint: You can add middleware here (e.g. to add response headers to every response)
+	before: [preflight], // add preflight upstream
+	finally: [corsify], // and corsify downstream
 });
 
 router.all('/example', async (req) => {
