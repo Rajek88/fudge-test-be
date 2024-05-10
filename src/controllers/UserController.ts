@@ -109,13 +109,21 @@ export const checkInvitationAndAddUserToTeam = async (request: IRequest, env: En
 			where: {
 				id: Number(invitation_id),
 			},
-			include: {
-				user: true,
+		});
+
+		// get user_id from mail
+		const user = await prisma.user.findUnique({
+			where: {
+				email: invitation?.email,
 			},
 		});
 
+		if (!user) {
+			throw new Error();
+		}
+
 		// check if invitation is invalid and if logged user has access to it
-		if (!invitation || invitation?.user?.id !== request?.loggedUser?.id) {
+		if (!invitation || user?.id !== request?.loggedUser?.id) {
 			return json({ message: 'Invalid invitation' }, { status: 404 });
 		}
 
@@ -139,7 +147,7 @@ export const checkInvitationAndAddUserToTeam = async (request: IRequest, env: En
 		// if everything is in time, check if user is alreday in team, add the user to team
 		const isUserAlreadyInTeam = await prisma.team_user_association.findMany({
 			where: {
-				user_id: invitation.user.id,
+				user_id: user.id,
 				team: invitation.team,
 			},
 		});
@@ -150,7 +158,7 @@ export const checkInvitationAndAddUserToTeam = async (request: IRequest, env: En
 			// add user to team
 			await prisma.team_user_association.create({
 				data: {
-					user_id: invitation.user.id,
+					user_id: user.id,
 					team: invitation.team,
 				},
 			});

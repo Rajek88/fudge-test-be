@@ -17,7 +17,6 @@ model user {
   name                  String
   password              String
   team_user_association team_user_association[]
-  invitation            invitation[]
 }
 
 model team_user_association {
@@ -33,7 +32,6 @@ model invitation {
   id         Int      @id @default(autoincrement())
   email      String
   team       String
-  user       user     @relation(fields: [email], references: [email])
   // the values should be: sent, accepted, expired
   status     String   @default("sent")
   created_at DateTime @default(now())
