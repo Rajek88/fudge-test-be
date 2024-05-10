@@ -59,7 +59,8 @@ router.all('*', async (req) => {
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		// websocket code
-		if (request.url.endsWith('/websocket')) {
+		const url = new URL(request.url).hostname + new URL(request.url).pathname;
+		if (url.endsWith('/websocket')) {
 			// Expect to receive a WebSocket Upgrade request.
 			// If there is one, accept the request and return a WebSocket Response.
 			const upgradeHeader = request.headers.get('Upgrade');
@@ -110,7 +111,8 @@ export class WebSocketServer extends DurableObject {
 		this.currentlyConnectedWebSockets += 1;
 
 		// add id of user to hashmap and put the value as true
-		const socketUserId = request.headers.get('x-socket-user-id');
+		const params = new URL(request.url).searchParams;
+		const socketUserId = params.get('user_id');
 		this.currentlyLiveUsers[`${socketUserId}`] = true;
 
 		// Upon receiving a message from the client, the server replies with the same message,
