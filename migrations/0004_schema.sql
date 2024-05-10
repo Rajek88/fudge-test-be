@@ -15,7 +15,6 @@ CREATE TABLE IF NOT EXISTS "team_user_association" (
 );
 
 -- CreateTable
-DROP TABLE "invitation";
 CREATE TABLE "invitation" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "email" TEXT NOT NULL,
@@ -26,10 +25,8 @@ CREATE TABLE "invitation" (
 );
 
 -- CreateIndex
-DROP INDEX "user_email_key";
 CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
 
 -- CreateIndex
-DROP INDEX "team_user_association_user_id_team_key";
 CREATE UNIQUE INDEX "team_user_association_user_id_team_key" ON "team_user_association"("user_id", "team");
 
