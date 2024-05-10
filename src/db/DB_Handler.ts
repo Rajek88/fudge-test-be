@@ -1,10 +1,15 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaD1 } from '@prisma/adapter-d1';
 
+let prismaInstance: PrismaClient;
+
 export const GeneratePrismaClient = (env: any) => {
-	const adapter = new PrismaD1(env.DB);
-	const prisma = new PrismaClient({ adapter });
-	return prisma;
+	if (!prismaInstance) {
+		const adapter = new PrismaD1(env.DB);
+		const prisma = new PrismaClient({ adapter });
+		prismaInstance = prisma;
+	}
+	return prismaInstance;
 };
 
 // Exclude keys from table

@@ -3,6 +3,7 @@ import { ExcludeFromRows, GeneratePrismaClient } from '../db/DB_Handler';
 import { comparePasswords, hashPassword } from '../utils/PasswordUtils';
 import { Env } from '../../worker-configuration';
 import { generateJWTToken } from '../utils/JWTUtils';
+import { sendEmail } from '../utils/PostmarkEmail';
 
 export const getAllUsers = async (request: IRequest, env: Env, ctx: ExecutionContext) => {
 	try {
@@ -101,8 +102,6 @@ export const checkInvitationAndAddUserToTeam = async (request: IRequest, env: En
 			return json({ message: 'Invalid input' }, { status: 400 });
 		}
 
-		// also make sure, the authenticated user has access to invitation
-
 		// now get the user from DB
 		const prisma = GeneratePrismaClient(env);
 		const invitation = await prisma.invitation.findUnique({
@@ -110,6 +109,10 @@ export const checkInvitationAndAddUserToTeam = async (request: IRequest, env: En
 				id: Number(invitation_id),
 			},
 		});
+
+		if (!invitation) {
+			return json({ message: 'Invalid invitation' }, { status: 404 });
+		}
 
 		// get user_id from mail
 		const user = await prisma.user.findUnique({
@@ -119,9 +122,10 @@ export const checkInvitationAndAddUserToTeam = async (request: IRequest, env: En
 		});
 
 		if (!user) {
-			throw new Error();
+			return json({ message: 'Invalid user' }, { status: 404 });
 		}
 
+		// also make sure, the authenticated user has access to invitation
 		// check if invitation is invalid and if logged user has access to it
 		if (!invitation || user?.id !== request?.loggedUser?.id) {
 			return json({ message: 'Invalid invitation' }, { status: 404 });
@@ -176,6 +180,7 @@ export const checkInvitationAndAddUserToTeam = async (request: IRequest, env: En
 		// now send this token to the response
 		return json({ message: 'success' }, { status: 200 });
 	} catch (error) {
+		console.log({ error });
 		return json({ message: 'error', error }, { status: 500 });
 	}
 };
@@ -208,6 +213,7 @@ export const inviteUserToTeam = async (request: IRequest, env: Env, ctx: Executi
 		});
 
 		// also send email to that email id
+		await sendEmail(`${env.FE_BASE}/invitations/${invitation.id}`, team);
 
 		// now send this token to the response
 		return json({ message: 'success', invitation_id: invitation.id }, { status: 200 });

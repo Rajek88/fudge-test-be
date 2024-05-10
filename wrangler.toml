@@ -11,6 +11,7 @@ database_id = "40d623dc-5757-4ddf-9168-d8dcd8533a23"
 
 [vars]
 API_SALT = "$2a$12$KwhxPZMAlLfZ4Bj.IG.otO"
+FE_BASE = "http://localhost:3000"
 
 [[durable_objects.bindings]]
 name = "WEBSOCKET_SERVER"
