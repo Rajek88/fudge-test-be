@@ -36,7 +36,7 @@ export const registerUser = async (request: IRequest, env: Env, ctx: ExecutionCo
 				password: hashedPassword,
 			},
 		});
-		return json({ message: 'success', user }, { status: 200 });
+		return json({ message: 'success' }, { status: 200 });
 	} catch (error) {
 		return json({ message: 'error', error }, { status: 500 });
 	}
@@ -86,5 +86,146 @@ export const loginUser = async (request: IRequest, env: Env, ctx: ExecutionConte
 		return json({ message: 'success', user: userWithoutPW, token }, { status: 200 });
 	} catch (error) {
 		return json({ message: 'error', error }, { status: 500 });
+	}
+};
+
+// checkInvitationAndAddUserToTeam,
+export const checkInvitationAndAddUserToTeam = async (request: IRequest, env: Env, ctx: ExecutionContext) => {
+	try {
+		// with the "withContent", you can parse the body, then it stores the parsed body to request.content
+		await withContent(request);
+		// now extract the required fields - invitationId
+		const invitation_id = request?.query?.id;
+		// if any field is missing, throw error
+		if (!invitation_id) {
+			return json({ message: 'Invalid input' }, { status: 400 });
+		}
+
+		// also make sure, the authenticated user has access to invitation
+
+		// now get the user from DB
+		const prisma = GeneratePrismaClient(env);
+		const invitation = await prisma.invitation.findUnique({
+			where: {
+				id: Number(invitation_id),
+			},
+			include: {
+				user: true,
+			},
+		});
+		if (!invitation) {
+			return json({ message: 'Invalid invitation' }, { status: 404 });
+		}
+
+		// time elapsed
+		const timeElapsed = Date.now() - invitation.created_at.getTime();
+		// if invitation is expired, i.e. 10 minutes have been passed, return error
+		if (10 * 60 * 1000 > timeElapsed) {
+			// update the status to db
+			await prisma.invitation.update({
+				where: {
+					id: Number(invitation_id),
+				},
+				data: {
+					status: 'expired',
+				},
+			});
+			// return the response
+			return json({ message: 'Invitation expired' }, { status: 400 });
+		}
+
+		// if everything is in time, check if user is alreday in team, add the user to team
+		const isUserAlreadyInTeam = await prisma.team_user_association.findMany({
+			where: {
+				user_id: invitation.user.id,
+				team: invitation.team,
+			},
+		});
+		// this returns array
+		// if the array has any value, means user is already added to team, then skip it
+		// else add the user
+		if (isUserAlreadyInTeam.length === 0) {
+			// add user to team
+			await prisma.team_user_association.create({
+				data: {
+					user_id: invitation.user.id,
+					team: invitation.team,
+				},
+			});
+			// update the status of invitation
+			await prisma.invitation.update({
+				where: {
+					id: Number(invitation_id),
+				},
+				data: {
+					status: 'accepted',
+				},
+			});
+		}
+
+		// now send this token to the response
+		return json({ message: 'success' }, { status: 200 });
+	} catch (error) {
+		return json({ message: 'error', error }, { status: 500 });
+	}
+};
+
+// inviteUserToTeam
+export const inviteUserToTeam = async (request: IRequest, env: Env, ctx: ExecutionContext) => {
+	try {
+		// with the "withContent", you can parse the body, then it stores the parsed body to request.content
+		await withContent(request);
+		// now extract the required fields
+		const { email, team } = request.content;
+
+		// check if team is valid
+		const teams = ['A', 'B', 'C', 'D'];
+		const isTeamValid = teams.includes(team);
+
+		// if any field is missing, throw error
+		if (!email || !team || !isTeamValid) {
+			return json({ message: 'Invalid input' }, { status: 400 });
+		}
+
+		const prisma = GeneratePrismaClient(env);
+
+		// now create invitation, no matter if user exists or not
+		const invitation = await prisma.invitation.create({
+			data: {
+				email: email,
+				team: team,
+			},
+		});
+
+		// also send email to that email id
+
+		// now send this token to the response
+		return json({ message: 'success', invitation_id: invitation.id }, { status: 200 });
+	} catch (error) {
+		return json({ message: 'error', error }, { status: 500 });
+	}
+};
+
+// getActiveTeamMembers
+export const getActiveTeamMembers = async (request: IRequest, env: Env, ctx: ExecutionContext) => {
+	try {
+		// get logged in user's id from token
+		// check in team_user_association table, and find out all the teams the user has access to
+		// get all the users from that team
+		// map their ids with socket.io, and poll it every 5 min from FE
+		return json({ message: 'success' }, { status: 200 });
+	} catch (error) {
+		return json({ message: 'error', error }, { status: 500 });
+	}
+};
+
+// getAllInvitations
+export const getAllInvitations = async (request: IRequest, env: Env, ctx: ExecutionContext) => {
+	try {
+		const prisma = GeneratePrismaClient(env);
+		const data = await prisma.invitation.findMany();
+		return json({ message: 'success', invitations: data }, { status: 200 });
+	} catch (error) {
+		return json({ message: 'error', error }, { status: 400 });
 	}
 };
