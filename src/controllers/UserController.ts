@@ -271,10 +271,50 @@ export const getTeamMembers = async (request: IRequest, env: Env, ctx: Execution
 
 // getAllInvitations
 export const getAllInvitations = async (request: IRequest, env: Env, ctx: ExecutionContext) => {
+	interface Invitation {
+		id: number;
+		email: string;
+		team: string;
+		status: string;
+		created_at: Date;
+		updated_at: Date;
+		joinedTeams?: string[];
+	}
+
+	interface Team {
+		id: number;
+		user_id: number;
+		team: string;
+		user: {
+			name: string;
+			email: string;
+		};
+	}
+
 	try {
 		const prisma = GeneratePrismaClient(env);
-		const data = await prisma.invitation.findMany();
-		return json({ message: 'success', invitations: data }, { status: 200 });
+		const invitations: Invitation[] = await prisma.invitation.findMany();
+		const teams: Team[] = await prisma.team_user_association.findMany({
+			include: {
+				user: {
+					select: {
+						name: true,
+						email: true,
+					},
+				},
+			},
+		});
+		// Map teams to invitations based on email
+		const invitationsWithJoinedTeams: (Invitation & { joinedTeams: string[] })[] = invitations.map((invitation) => {
+			// Find teams that match the email of the invitation
+			const matchingTeams: Team[] = teams.filter((team) => team.user.email === invitation.email);
+			// Extract unique team names from matching teams
+			const joinedTeams: string[] = [...new Set(matchingTeams.map((team) => team.team))];
+			// Return invitation object with joinedTeams field added
+			return { ...invitation, joinedTeams };
+		});
+
+		return json({ message: 'success', invitations: invitationsWithJoinedTeams }, { status: 200 });
 	} catch (error) {
 		return json({ message: 'error', error }, { status: 400 });
 	}
