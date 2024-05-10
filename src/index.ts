@@ -1,6 +1,7 @@
 import { IRequest, Router, json } from 'itty-router';
-import { getAllUsers, loginUser, registerUser } from './controllers/UserController';
+import { getAllUsers, inviteUserToTeam, loginUser, registerUser } from './controllers/UserController';
 import { Env } from '../worker-configuration';
+import { validateToken } from './middlewares/Auth';
 
 const router = Router<IRequest, [Env, ExecutionContext]>({
 	// Hint: You can add middleware here (e.g. to add response headers to every response)
@@ -18,6 +19,8 @@ router.post('/user/register', registerUser);
 
 // register new user
 router.post('/user/login', loginUser);
+
+router.post('/admin/inviteUser', validateToken, inviteUserToTeam);
 
 router.all('*', async (req) => {
 	return json({ error: 'Not found' }, { status: 404 });

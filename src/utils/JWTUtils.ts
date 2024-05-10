@@ -20,7 +20,7 @@ export async function decodeJWTToken(token: string): Promise<object> {
 		// Decoding token
 		const { payload } = jwt.decode(token);
 		return {
-			isValid: false,
+			isValid: true,
 			...payload,
 		};
 	} catch (error) {
