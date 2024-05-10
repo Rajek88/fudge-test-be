@@ -35,7 +35,7 @@ router.post('/user/register', registerUser);
 router.post('/user/login', loginUser);
 
 // invite user
-router.post('/admin/inviteUser', validateToken, inviteUserToTeam);
+router.post('/admin/inviteUser', inviteUserToTeam);
 
 // get all invitations
 router.get('/admin/getAllInvitations', getAllInvitations);
