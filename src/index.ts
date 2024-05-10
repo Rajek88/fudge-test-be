@@ -46,11 +46,6 @@ router.get('/user/acceptInvitation', validateToken, checkInvitationAndAddUserToT
 // getActiveTeamMembers
 router.get('/user/getActiveTeamMembers', validateToken, getActiveTeamMembers);
 
-// // socket
-// router.get('/socket', (req: IRequest) => {
-// 	return json({ req }, { status: 200 });
-// });
-
 // fallback
 router.all('*', async (req) => {
 	return json({ error: 'Not found' }, { status: 404 });
@@ -118,11 +113,16 @@ export class WebSocketServer extends DurableObject {
 		// Upon receiving a message from the client, the server replies with the same message,
 		// and the total number of connections with the "[Durable Object]: " prefix
 		server.addEventListener('message', (event: MessageEvent) => {
-			server.send(
-				`[Durable Object] currentlyConnectedWebSockets: ${
-					this.currentlyConnectedWebSockets
-				} -> Received ${event?.data?.toString()} from ${socketUserId}`
-			);
+			// if message is to ask the live user_ids
+			if (event?.data?.toString() === 'live-user-ids') {
+				server.send(`${JSON.stringify(this.currentlyLiveUsers)}`);
+			} else {
+				server.send(
+					`[Durable Object] currentlyConnectedWebSockets: ${
+						this.currentlyConnectedWebSockets
+					} -> Received ${event?.data?.toString()} from ${socketUserId}`
+				);
+			}
 		});
 
 		// If the client closes the connection, the runtime will close the connection too.
