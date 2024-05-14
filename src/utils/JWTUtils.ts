@@ -8,25 +8,40 @@ export async function generateJWTToken(userPayload: object): Promise<string> {
 	return token;
 }
 
-export async function decodeJWTToken(token: string): Promise<object> {
+interface Payload {
+	name: string;
+	email: string;
+	id: number;
+	iat: number;
+}
+
+export async function decodeJWTToken(token: string) {
 	try {
 		const isValid = await jwt.verify(token, secretKey);
 		// Check for validity
 		if (!isValid) {
 			return {
-				isValid: false,
+				isValid: false as const,
 			};
 		}
 		// Decoding token
-		const { payload } = jwt.decode(token);
+		const payload = jwt.decode<Payload>(token)?.payload;
+		// console.log({ payload });
+		if (!payload) {
+			throw new Error();
+		}
+		// here we actually have data
 		return {
-			isValid: true,
-			...payload,
+			isValid: true as const,
+			name: payload.name,
+			email: payload.email,
+			id: payload.id,
+			iat: payload.iat,
 		};
 	} catch (error) {
 		console.error('Error decoding JWT token:', error);
 		return {
-			isValid: false,
+			isValid: false as const,
 		};
 	}
 }

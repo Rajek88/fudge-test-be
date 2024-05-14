@@ -10,7 +10,7 @@ import {
 	registerUser,
 } from './controllers/UserController';
 import { Env } from '../worker-configuration';
-import { validateToken } from './middlewares/Auth';
+import { validateSocketToken, validateToken } from './middlewares/Auth';
 
 // get preflight and corsify pair
 const { preflight, corsify } = cors();
@@ -107,8 +107,23 @@ export class WebSocketServer extends DurableObject {
 
 		// add id of user to hashmap and put the value as true
 		const params = new URL(request.url).searchParams;
-		const socketUserId = params.get('user_id');
-		this.currentlyLiveUsers[`${socketUserId}`] = true;
+		const token = params.get('token');
+
+		// check if token is present
+		if (!token || token?.length === 0) {
+			return new Response(null, {
+				status: 404,
+			});
+		}
+		// check if token is valid
+		const user_id = await validateSocketToken(token);
+		if (user_id === null) {
+			return new Response(null, {
+				status: 403,
+			});
+		}
+
+		this.currentlyLiveUsers[`${user_id}`] = true;
 
 		// Upon receiving a message from the client, the server replies with the same message,
 		// and the total number of connections with the "[Durable Object]: " prefix
@@ -120,7 +135,7 @@ export class WebSocketServer extends DurableObject {
 				server.send(
 					`[Durable Object] currentlyConnectedWebSockets: ${
 						this.currentlyConnectedWebSockets
-					} -> Received ${event?.data?.toString()} from ${socketUserId}`
+					} -> Received ${event?.data?.toString()} from ${user_id}`
 				);
 			}
 		});
@@ -130,7 +145,7 @@ export class WebSocketServer extends DurableObject {
 			this.currentlyConnectedWebSockets -= 1;
 
 			// also remove user from live user's hashmap
-			this.currentlyLiveUsers[`${socketUserId}`] = false;
+			this.currentlyLiveUsers[`${user_id}`] = false;
 
 			server.close(cls.code, `Durable Object is closing WebSocket -> last live users ${JSON.stringify(this.currentlyLiveUsers)}`);
 		});

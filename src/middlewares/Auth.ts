@@ -22,3 +22,19 @@ export const validateToken = async (req: IRequest, env: Env, ctx: ExecutionConte
 		return json({ message: 'Invalid auth' }, { status: 404 });
 	}
 };
+
+export const validateSocketToken = async (token: string) => {
+	try {
+		// now decode token
+		const decoded = await decodeJWTToken(token);
+		if (!decoded || !decoded?.isValid) {
+			throw Error();
+		}
+		// if the token is valid, return true
+		return decoded.id;
+	} catch (error) {
+		console.log({ error });
+		// else return false
+		return null;
+	}
+};
